@@ -1,0 +1,8 @@
+Tutorial: https://www.youtube.com/watch?v=AU7nNGTqKT0
+
+Abrir dos terminales ubuntu (WSL)
+Ejecutar el servidor en una
+    python3 server.py
+Ejecutar el cliente en la otra
+    python3 client.py
+Y eso :>
