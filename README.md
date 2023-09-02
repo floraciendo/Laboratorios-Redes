@@ -12,3 +12,4 @@ https://www.overleaf.com/6361894656stqprpmryfrg
 ### weas asumidas por mientras
 - preguta 1, el conecta4 es el que dice quien gana
 - pregunta 2, el jugador puede terminar en cualquier momento
+- pregunta 3, we dont know
