@@ -147,33 +147,39 @@ func main() {
 
 	buf := make([]byte, 1024)
 
+	fmt.Println("Connection established with", ServerAddr)
+
 	for {
-		n, addr, err := ServerConn.ReadFromUDP(buf)
-		fmt.Println("Received ", string(buf[0:n]), " from ", addr)
+		
+        n, addr, err := ServerConn.ReadFromUDP(buf)
+        
+        fmt.Println("Received ", string(buf[0:n]), " from ", addr)
 
-		if err != nil {
-			fmt.Println("Error: ", err)
-		}
+        if err != nil{
+            fmt.Println("Error: ", err)
+        }
 
-		if string(buf[0:n]) == "end_game" {
-			fmt.Println("Game ended by intermediate server")
-			break
-		}
+        if string(buf[0:n]) == "end_game"{
+            fmt.Println("Game ended by intermediate server")
+            break
+        }
 
-		move := buf[0] - '0'
-		game.makeMove(int(move))
+        move := buf[0] - '0'
+        game.makeMove(int(move))
 
-		if game.Status == "active" {
-			game.makeMove(2)
-		}
+        if game.Status == "active"{
+            game.makeMove(2)
+        }
 
-		b, err := json.Marshal(game)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+        b, err := json.Marshal(game)
+        
+        if err != nil{
+            fmt.Println(err)
+            return 
+        }
 
-		fmt.Println("Sending game state to intermediate server:", string(b))
-		ServerConn.WriteToUDP(b, addr)
-	}
+        fmt.Println("Sending game state to intermediate server:", string(b))
+        
+        ServerConn.WriteToUDP(b, addr)
+    }
 }

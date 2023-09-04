@@ -20,7 +20,7 @@ def connect4_server():
 
             # Receive the data in small chunks and retransmit it
             while True:
-                data = client_sock.recv(16)
+                data = client_sock.recv(1024)
                 print('Received {!r}'.format(data.decode()))
                 if data:
                     if data.decode() == "end_game":

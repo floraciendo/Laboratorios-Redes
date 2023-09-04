@@ -20,10 +20,11 @@ def connect4_client():
         amount_expected = len(message)
         
         while amount_received < amount_expected:
-            data = sock.recv(16)
+            data = sock.recv(1024)
             amount_received += len(data)
             print('Received {!r}'.format(data.decode()))
-
+            
+        
             if data.decode() == "player_wins":
                 print("Congratulations! You won!")
                 break
@@ -33,6 +34,8 @@ def connect4_client():
             elif data.decode() == "draw":
                 print("It's a draw!")
                 break
+
+            #this is where we get the game state and print it to the user, and then wait for the user to make a move
 
     finally:
         print('Closing socket')
