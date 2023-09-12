@@ -9,3 +9,11 @@ idk man
   - asumimos que si
 - [ ] que se refiere cuando dice que tiene que abrir uno cada jugada, like cada partida o cada vez que tiene que responder a la jugada del jugador
   - we dont know
+
+
+### comentarios flo (｡･∀･)ﾉﾞ
+- ya no debería tirar ningún error
+- faltaría creación de las conexiones UDP con cada jugada, si es que al final hay que crearlas
+- hay prints en el intermediario y servidor que no sé si deberíamos borrar
+- el servidor juega de manera aleatoria nomás
+- ignorando lo de las conexiones ya estaría listo el código, faltaría el informe
