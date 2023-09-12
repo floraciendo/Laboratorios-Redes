@@ -7,11 +7,12 @@ JUGADOR = "●"
 SERVIDOR = "□"
 INTERMEDIARIO = ("localhost", 10000)
 
-# Funciones para simplificación
+# Crea el tablero de 6x6
 def crear_tablero():
     tablero = [[LIBRE for x in range(6)] for x in range(6)]
     return tablero
 
+# Muestra por pantalla el tablero
 def mostrar_tablero(tablero):
     i = 6
     linea = " "
@@ -26,9 +27,11 @@ def mostrar_tablero(tablero):
     print(" | 1 | 2 | 3 | 4 | 5 | 6 |")
     print(" +---+---+---+---+---+---+")
 
+# Muestra por pantalla que ficha tiene cada jugador
 def mostrar_jugadores():
     print("  Jugador: {} | Servidor: {}".format(JUGADOR, SERVIDOR))
 
+# Revisa donde se puede colocar la ficha
 def fila_valida(columna, tablero):
     indice = 5
     while indice >= 0:
@@ -36,6 +39,7 @@ def fila_valida(columna, tablero):
             return indice
         indice -= 1
 
+# Actualiza el tablero con la jugada
 def colocar_pieza(columna, jugador, tablero):
     fila = fila_valida(columna, tablero)
     if fila == -1:
@@ -43,154 +47,272 @@ def colocar_pieza(columna, jugador, tablero):
     tablero[fila][columna] = jugador
     return True
 
+# Pide por pantalla la columna a colocar la ficha
 def solicitar_jugada(tablero):
     while True:
         columna = input("Ingrese la columna para colocar su ficha: ")
-        columna = int(columna)
-        if columna >= 1 and columna <= 6:
-            if not fila_valida(columna, tablero):
+        if int(columna) >= 1 and int(columna) <= 6:
+            fila = fila_valida(int(columna) - 1, tablero)
+            if fila == -1:
                 print("Esta columna ya está llena")
             else:
                 colocar_pieza(int(columna) - 1, JUGADOR, tablero)
-                return columna - 1
+                return int(columna) - 1
         else:
             print("Columna inválida")
 
-'''
-INICIO DEL CÓDIGO
-'''
-
+# Todo el juego
 def solicitar_partida():
     # Crea el socket TCP
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
     # Se conecta al puerto del intermediario
     sock.connect(INTERMEDIARIO)
+
     # Envia la solicitud de partida
     mensaje = "PLAY"
     sock.sendall(mensaje.encode())
+
     # Recibe la respuesta de disponibilidad
     disponibilidad = sock.recv(1024)
     disponibilidad = disponibilidad.decode()
+
     # Si hay disponibilidad
     if disponibilidad == "OK":
+        # Muestra la disponibilidad
         print("Respuesta de disponibilidad: {}".format(disponibilidad))
+        print("--------------------------------")
+        print("\nInicia el juego")
+
+        # Crea el tablero nuevo
         tablero = crear_tablero()
         ganador = False
+
+        # Mientras el juego sigue en curso
         while not ganador:
+            # Se le muestra el tablero al cliente
+            print()
             mostrar_tablero(tablero)
             mostrar_jugadores()
             print("Es tu turno")
-            mensaje = solicitar_jugada(tablero)
+
+            # Solicita la jugada del cliente
+            mensaje = str(solicitar_jugada(tablero))
+
             # Envia la jugada al intermediario
             sock.sendall(mensaje.encode())
+
             # Recibe la respuesta del intermediario
             jugada = sock.recv(1024)
             jugada = jugada.decode()
-            # Ganó el jugador
+
+            # Ganó el cliente
             if int(jugada) == 0:
+                print()
                 mostrar_tablero(tablero)
-                print("¡Ganaste!")
+                print("\n¡Ganaste!\n")
+
+                # Pregunta si quiere jugar de nuevo
                 repetir = input("¿Quieres jugar otra partida? S/N: ")
-                # Se "limpia" el tablero
+
+                # Solicita una nueva partida
                 if repetir == "S":
                     print("\nIniciando nueva partida\n")
+                    
+                    # Se limpia el tablero
                     tablero = crear_tablero()
                     ganador = False
-                # Se envía el mensaje para terminar las ejecuciones
+                
+                # No quiere una nueva partida
                 else:
+                    # Se envia el mensaje para terminar las ejecuciones
                     mensaje = "DONE"
                     sock.sendall(mensaje.encode())
+
+                    # Recibe la respuesta
                     mensaje = sock.recv(1024)
                     mensaje = mensaje.decode()
+
+                    # Si da el OK
                     if mensaje == "OK":
                         print("Muchas gracias por jugar Conecta4")
                         ganador = True
                         sock.close()
+                    
+                    # En caso de un error
                     else:
                         print("Ocurrió un problema")
                         exit(1)
+
             # La partida sigue en curso
             elif int(jugada) > 0:
+                # Muestra que va a jugar el servidor
                 print("Es el turno del servidor")
+
                 # Existe un empate
                 if int(jugada) > 100:
+                    # Muestra la jugada del servidor
+                    print("El servidor colocó su ficha en la columna {}".format(int(jugada) - 100))
+                    
+                    # Coloca la pieza del servidor
+                    colocar_pieza(int(jugada) - 101, SERVIDOR, tablero)
+                    mostrar_tablero(tablero)
+
+                    # Se muestra el empate y pregunta por una nueva partida
                     print("Empataste")
                     repetir = input("¿Quieres jugar otra partida? S/N: ")
-                    # Se "limpia" el tablero
+
+                    # Envía la solicitud de una partida nueva
                     if repetir == "S":
-                        print("\nIniciando nueva partida\n")
-                        tablero = crear_tablero()
-                        ganador = False
-                    # Se envía el mensaje para terminar las ejecuciones
+                        # Envia la solicitud de una partida nueva
+                        mensaje = "PLAY"
+                        sock.sendall(mensaje.encode())
+
+                        # Recibe la respuesta de disponibilidad
+                        disponibilidad = sock.recv(1024)
+                        disponibilidad = disponibilidad.decode()
+
+                        # Se puede jugar
+                        if disponibilidad == "OK":
+                            print("\nIniciando nueva partida\n")
+
+                            # Se limpia el tablero
+                            tablero = crear_tablero()
+                            ganador = False
+                        
+                        # En caso de un error
+                        else:
+                            print("\nEl servidor Conecta4 no se encuentra disponible\n")
+                            sock.close()
+                            exit()
+                    
+                    # No quiere una partida nueva
                     else:
+                        # Se envía el mensaje para terminar las ejecuciones
                         mensaje = "DONE"
                         sock.sendall(mensaje.encode())
+
+                        # Recibe la respuesta
                         mensaje = sock.recv(1024)
                         mensaje = mensaje.decode()
+
+                        # Si da el OK
                         if mensaje == "OK":
                             print("Muchas gracias por jugar Conecta4")
                             ganador = True
                             sock.close()
+                        
+                        # En caso de un error
                         else:
                             print("Ocurrió un problema")
+                            sock.close()
                             exit(1)
-                # Se agrega la jugada del bot y sigue el juego
-                colocar_pieza(int(jugada) - 100, SERVIDOR, tablero)
+                
+                # Si no hay ganador ni empate con la jugada
+                # Se agrega la jugada del servidor y sigue el juego
+                colocar_pieza(int(jugada) - 1, SERVIDOR, tablero)
+
             # Ganó el servidor
             else:
-                colocar_pieza(-int(jugada), SERVIDOR, tablero)
+                # Se agrega la jugada del servidor
+                colocar_pieza(-int(jugada) - 1, SERVIDOR, tablero)
+
+                # Muestra que ganó el servidor
+                print("El servidor colocó su ficha en la columna {}".format(int(jugada)))
                 mostrar_tablero(tablero)
-                print("Perdiste")
+                print("\nPerdiste\n")
+
+                # Pregunta si quiere jugar de nuevo
                 repetir = input("¿Quieres jugar otra partida? S/N: ")
-                # Se "limpia" el tablero
+
+                # Envía la solicitud de una partida nueva
                 if repetir == "S":
-                    print("\nIniciando nueva partida\n")
-                    tablero = crear_tablero()
-                    ganador = False
-                # Se envía el mensaje para terminar las ejecuciones
+                    # Envia la solicitud de una partida nueva
+                    mensaje = "PLAY"
+                    sock.sendall(mensaje.encode())
+
+                    # Recibe la respuesta de disponibilidad
+                    disponibilidad = sock.recv(1024)
+                    disponibilidad = disponibilidad.decode()
+
+                    # Se puede jugar
+                    if disponibilidad == "OK":
+                        print("\nIniciando nueva partida\n")
+
+                        # Se limpia el tablero
+                        tablero = crear_tablero()
+                        ganador = False
+                    
+                    # En caso de un error
+                    else:
+                        print("\nEl servidor Conecta4 no se encuentra disponible\n")
+                        sock.close()
+                        exit()
+
+                # No quiere una partida nueva
                 else:
+                    # Se envía el mensaje para terminar las ejecuciones
                     mensaje = "DONE"
                     sock.sendall(mensaje.encode())
+
+                    # Recibe la respuesta
                     mensaje = sock.recv(1024)
                     mensaje = mensaje.decode()
+
+                    # Si da el OK
                     if mensaje == "OK":
                         print("Muchas gracias por jugar Conecta4")
                         ganador = True
                         sock.close()
+
+                    # En caso de un error
                     else:
                         print("Ocurrió un problema")
+                        sock.close()
                         exit(1)
+        
         # Se jugó y se quiere terminar la ejecución
         return True
+    
     # No hay disponibilidad
     else:
         print("Respuesta de disponibilidad: {}".format(disponibilidad))
+        print("--------------------------------")
         sock.close()
+
+        # No se pudo jugar
         return False
 
 
-'''
-INICIO DEL CÓDIGO MAIN
-'''
-print("Bienvenido al juego Conecta4")
+# Inicio del código a ejecutar
+print("Bienvenido al juego Conecta4\n")
+
 while True:
     print("Seleccione una opción\n 1. Jugar\n 2. Salir")
     opcion = input(">> ")
+
+    # Si se quiere jugar
     if opcion == "1":
         while True:
+
+            # Se inicia la partida y revisa si se jugó
             disponibilidad = solicitar_partida()
-            # No se jugaron partidas
+
+            # No se pudo establecer la conexión
             if not disponibilidad:
-                intentar = input("¿Desea intentarlo nuevamente? S/N: ")
-                if intentar == "N":
-                    print("Saliendo del juego Conecta4")
-                    exit()
-                # Vuelve al inicio del while
-            # Se jugaron todas las partidas posibles
+                print("\nNo se pudo establercer conexión con el servidor")
+                print("Saliendo del juego Conecta4")
+                exit()
+
+            # Se jugó y termina la ejecución
             else:
                 exit()
+    
+    # Si se quiere salir
     elif opcion == "2":
         print("Saliendo del juego Conecta4")
         exit()
+    
+    # En caso que no responda 1 o 2
     else:
         print("Opción no válida\n")

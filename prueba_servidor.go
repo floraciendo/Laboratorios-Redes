@@ -4,9 +4,8 @@ import (
     "fmt"
     "net"
     "strconv" // Pasar de string a int y al revés
-    "math/rand" // Para generar la disponibilidad
-    // Y para las jugadas aleatorias del servidor por mientras
-    "time" // Para generar la disponibilidad, sino siempre da OK
+    "math/rand" // Para generar las jugadas aleatorias del servidor
+    "time" // Para no generar siempre la misma jugada
 )
 
 const (
@@ -17,10 +16,12 @@ const (
     LIBRE = 0
 )
 
+// El tablero
 type matriz [][]float64
 
+// Revisa si puede colocar la ficha
 func valido(columna int, tablero matriz) int {
-    fila := 6
+    fila := 5
     for fila >= 0 {
         if tablero[fila][columna] == LIBRE {
             return fila
@@ -31,6 +32,7 @@ func valido(columna int, tablero matriz) int {
     return -1
 }
 
+// Inicio del código a ejecutar
 func main() {
     // Aleatoriedad de los números generados
     rand.Seed(time.Now().UnixNano())
@@ -58,6 +60,10 @@ func main() {
 
     // Mientras reciba mensajes
     for {
+        // Asegura la capacidad para recibir el mensaje completo cada vez 
+        mensaje = make([]byte, 1024)
+
+        // Recibe el mensaje del intermediario
         n, d_intermediario, err := s_int.ReadFromUDP(mensaje)
         if err != nil {
             fmt.Println("Error: ", err)
@@ -65,33 +71,46 @@ func main() {
 
         // Pasar el mensaje a string
         respuesta := string(mensaje[0:n])
+        fmt.Println("Recibí ", respuesta, " de ", d_intermediario)
 
-        // Si el jugador termina la partida
+        // Cliente termina la partida
         if  respuesta == "DONE" {
+            // Envía respuesta para terminar las ejecuciones
+            respuesta = "OK"
             mensaje = []byte("OK")
-            break
-        } else if respuesta == "PLAY" {
-            // Si el jugador inicia una partida
 
-            // "Limpia" el tablero
+            // Manda el mensaje
+            fmt.Println("Envié ", respuesta, " a ", d_intermediario) 
+            // Con el break termina la ejecución así que se envía antes
+            s_int.WriteToUDP(mensaje, d_intermediario)
+
+            // Sale del ciclo
+            break
+
+        // Cliente solicita una partida
+        } else if respuesta == "PLAY" {
+            // "Limpia" el tablero en caso de que se haya jugado antes
             tablero = matriz{{0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}}
 
-            // Generación aleatoria de la disponibilidad
-            disponibilidad := rand.Intn(2)
-            if disponibilidad == 1 {
-                mensaje = []byte("OK")
-            } else {
-                mensaje = []byte("NO")
-            }
-        } else {
-            // Jugada del cliente
+            // Envía disponibilidad
+            respuesta = "OK"
+            mensaje = []byte("OK")
 
-            // Pasar la respuesta a int
+        // Recibe un string vacío
+        } else if respuesta == "" {
+            // Envía disponibilidad en caso de error
+            respuesta = "NO"
+            mensaje = []byte("NO")
+
+        // Jugada del cliente
+        } else {
+            // Pasa la respuesta a int
             columna, err := strconv.Atoi(respuesta)
             if err != nil {
                 fmt.Println("Error: ", err)
             }
 
+            // Coloca la jugada del cliente
             fila := valido(columna, tablero)
             tablero[fila][columna] = JUGADOR
 
@@ -99,17 +118,21 @@ func main() {
             fila = -1
             for fila == -1 {
                 columna = rand.Intn(6)
+
+                // Revisa que sea una fila válida
                 fila = valido(columna, tablero)
             }
+
+            // Coloca la jugada del servidor
             tablero[fila][columna] = SERVIDOR
 
-            // Pasa la jugada a string
+            // Envía la jugada del servidor
             respuesta = strconv.Itoa(columna)
-
-            // Termina de pasar la jugada a byte
             mensaje = []byte(respuesta)
         }
-        // Envia el mensaje al intermediario
+
+        // Envía el mensaje al intermediario
+        fmt.Println("Envié ", respuesta, " a ", d_intermediario)
         s_int.WriteToUDP(mensaje, d_intermediario)
     }
 }

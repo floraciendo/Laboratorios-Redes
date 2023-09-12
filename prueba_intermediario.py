@@ -9,11 +9,12 @@ SERVIDOR = "O"
 PARA_CLIENTE = ("localhost", 10000)
 PARA_SERVIDOR = ("localhost", 20000)
 
-# Funciones para simplificación
+# Crea el tablero de 6x6
 def crear_tablero():
     tablero = [[LIBRE for x in range(6)] for x in range(6)]
     return tablero
 
+# Revisa donde se puede colocar la ficha
 def fila_valida(columna, tablero):
     indice = 5
     while indice >= 0:
@@ -21,6 +22,7 @@ def fila_valida(columna, tablero):
             return indice
         indice -= 1
 
+# Actualiza el tablero con la jugada
 def colocar_pieza(columna, jugador, tablero):
     fila = fila_valida(columna, tablero)
     if fila == -1:
@@ -28,6 +30,7 @@ def colocar_pieza(columna, jugador, tablero):
     tablero[fila][columna] = jugador
     return True
 
+# Revisa si alguien ganó
 def buscar_ganador(tablero, jugador):
     # buscar por filas —
     for fila in tablero:
@@ -45,6 +48,7 @@ def buscar_ganador(tablero, jugador):
     # diagonales en /
     for i in range(5, 2, -1):
         if tablero[i][0] == jugador and tablero[i - 1][1] == jugador and tablero[i - 2][2] == jugador and tablero[i - 3][3] == jugador:
+            print("ganador diagonal / v1")
             return True
         elif tablero[i][1] == jugador and tablero[i - 1][2] == jugador and tablero[i - 2][3] == jugador and tablero[i - 3][4] == jugador:
             return True
@@ -60,6 +64,7 @@ def buscar_ganador(tablero, jugador):
             return True
     return False
 
+# Revisa si se produjo un empate
 def buscar_empate(tablero):
     for columna in range(6):
         # Todavia se puede jugar
@@ -68,85 +73,152 @@ def buscar_empate(tablero):
             return False
     # Revisó todas las columnas y no hay espacios disponibles
     return True
-    
+
+# Todo el juego
 def conexion():
     # Crea la conexión TCP para el cliente
     int_cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # Asociarlo al puerto
-    int_cliente.bind(PARA_CLIENTE)
-    # Espera a que se solicite la partida
-    int_cliente.listen()
 
+    # Lo asocia a un puerto
+    int_cliente.bind(PARA_CLIENTE)
+
+    # Espera a que solicite la partida
+    int_cliente.listen()
     while True:
         # Cuando se solicita una partida
         s_cliente, d_cliente = int_cliente.accept()
+
         try:
             while True:
                 # Recibe el mensaje
                 mensaje = s_cliente.recv(1024)
+                print("Recibí {} de {}".format(mensaje.decode(), d_cliente))
+
                 # Si recibió algo
                 if mensaje:
                     mensaje = mensaje.decode()
+
                     # Crea la conexión UDP para el servidor
                     int_servidor = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+                    # El cliente solicita un apartida
                     if mensaje == "PLAY":
                         # Revisa disponibilidad en el servidor
                         int_servidor.sendto(mensaje.encode(), PARA_SERVIDOR)
+                        print("Envié {} a {}".format(mensaje, PARA_SERVIDOR))
+
                         # Recibe la disponibilidad del servidor
                         mensaje = int_servidor.recvfrom(1024)
                         mensaje = mensaje[0]
+                        print("Recibí {} de {}".format(mensaje.decode(), PARA_SERVIDOR))
+
                         # Responde al cliente
                         s_cliente.sendall(mensaje)
+                        print("Envié {} a {}".format(mensaje.decode(), d_cliente))
+
+                        # Existe disponibilidad
                         if mensaje.decode() == "OK":
                             # Crea el tablero una vez que tiene confirmación
                             tablero = crear_tablero()
+
+                    # El cliente quiere terminar la ejecución
                     elif mensaje == "DONE":
                         # Envia mensaje de término al servidor
                         int_servidor.sendto(mensaje.encode(), PARA_SERVIDOR)
+                        print("Envié {} a {}".format(mensaje, PARA_SERVIDOR))
+
                         # Recibe respuesta del servidor
                         mensaje = int_servidor.recvfrom(1024)
                         mensaje = mensaje[0]
+                        print("Recibí {} de {}".format(mensaje.decode(), PARA_SERVIDOR))
+
                         # Responde al cliente
                         s_cliente.sendall(mensaje)
+                        print("Envié {} a {}".format(mensaje.decode(), d_cliente))
+
+                        # Recibe el OK
                         if mensaje.decode() == "OK":
-                            break
+                            s_cliente.close()
+                            exit()
+                        
+                        # En caso de un error
                         else:
                             print("Ocurrió un problema")
                             s_cliente.close()
                             exit(1)
+
+                    # Recibe la jugada del cliente
                     else:
-                        # Recibe la jugada del cliente
+                        # Coloca la pieza
                         colocar_pieza(int(mensaje), JUGADOR, tablero)
+
+                        # Busca si ganó el cliente
                         ganador = buscar_ganador(tablero, JUGADOR)
-                        # Si ganó el jugador
+
+                        # Si ganó el cliente
                         if ganador:
+                            # Responde al cliente
                             mensaje = "0"
                             s_cliente.sendall(mensaje.encode())
-                        # Si no ganó pide la jugada al servidor
+                            print("Envié {} a {}".format(mensaje, d_cliente))
+
+                        # No ganó el cliente
                         else:
-                            int_servidor.sendto(mensaje.encode(), PARA_SERVIDOR)
-                            mensaje = int_servidor.recvfrom(1024)
-                            mensaje = mensaje[0].decode()
-                            colocar_pieza(int(mensaje), SERVIDOR, tablero)
-                            ganador = buscar_ganador(tablero, SERVIDOR)
-                            # Si ganó el servidor se envía la columna en (-)
-                            if ganador:
-                                mensaje = "-" + mensaje
-                            # Si no ganó el servidor se envía la columna en (+)
-                            # Se revisa si existe un empate
+                            # Revisa si existe un empate
                             empate = buscar_empate(tablero)
+
+                            # Si existe un empate con la jugada del cliente
                             if empate:
-                                # Si existe empate envia la columna jugada + 100
+                                # Mensaje de respuesta
                                 mensaje = str(int(mensaje) + 100)
-                            s_cliente.sendall(mensaje.encode())
+
+                            # No existe un empate
+                            else:
+                                # Envía la jugada del cliente al servidor
+                                int_servidor.sendto(mensaje.encode(), PARA_SERVIDOR)
+                                print("Envié {} a {}".format(mensaje, PARA_SERVIDOR))
+
+                                # Recibe la jugada del servidor
+                                mensaje = int_servidor.recvfrom(1024)
+
+                                # Convierto el mensaje a string
+                                mensaje = mensaje[0].decode()
+                                print("Recibí {} de {}".format(mensaje, PARA_SERVIDOR))
+
+                                # Actualiza con la jugada del servidor
+                                colocar_pieza(int(mensaje), SERVIDOR, tablero)
+                                mensaje = str(int(mensaje) + 1)
+
+                                # Busca si ganó el servidor
+                                ganador = buscar_ganador(tablero, SERVIDOR)
+
+                                # Ganó el servidor
+                                if ganador:
+                                    # Mensaje de respuesta
+                                    # El mensaje lleva la jugada en (-)
+                                    mensaje = "-" + mensaje
+                                
+                                # No ganó el servidor
+                                else:
+                                    # Revisa si existe un empate
+                                    empate = buscar_empate(tablero)
+
+                                    # Si existe un empate con la jugada del servidor
+                                    if empate:
+                                        # Mensaje de respuesta
+                                        mensaje = str(int(mensaje) + 100)
+                                
+                                # Responde al cliente
+                                print("Envié {} a {}".format(mensaje, d_cliente))
+                                s_cliente.sendall(mensaje.encode())
+                
+                # Si no recibe nada
                 else:
                     break
         finally:
-            # Se cierran las conexiones ??
+            # Se cierra la conexión
             s_cliente.close()
 
 
-'''
-INICIO DEL CÓDIGO MAIN
-'''
+# Inicio del código a ejecutar
 conexion()
