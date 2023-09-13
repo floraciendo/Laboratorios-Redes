@@ -80,7 +80,7 @@ def solicitar_partida():
     # Si hay disponibilidad
     if disponibilidad == "OK":
         # Muestra la disponibilidad
-        print("Respuesta de disponibilidad: {}".format(disponibilidad))
+        print("Respuesta de disponibilidad: {}\n".format(disponibilidad))
         print("--------------------------------")
         print("\nInicia el juego")
 
@@ -94,7 +94,7 @@ def solicitar_partida():
             print()
             mostrar_tablero(tablero)
             mostrar_jugadores()
-            print("Es tu turno")
+            print("\nEs tu turno")
 
             # Solicita la jugada del cliente
             mensaje = str(solicitar_jugada(tablero))
@@ -110,19 +110,36 @@ def solicitar_partida():
             if int(jugada) == 0:
                 print()
                 mostrar_tablero(tablero)
-                print("\n¡Ganaste!\n")
+                print("\n¡Ganaste! (●ˇ∀ˇ●)\n")
 
                 # Pregunta si quiere jugar de nuevo
                 repetir = input("¿Quieres jugar otra partida? S/N: ")
 
                 # Solicita una nueva partida
                 if repetir == "S":
-                    print("\nIniciando nueva partida\n")
+
+                    # Envia la solicitud de una partida nueva
+                        mensaje = "PLAY"
+                        sock.sendall(mensaje.encode())
+
+                        # Recibe la respuesta de disponibilidad
+                        disponibilidad = sock.recv(1024)
+                        disponibilidad = disponibilidad.decode()
+
+                        # Se puede jugar
+                        if disponibilidad == "OK":
+                            print("\nIniciando nueva partida\n")
+
+                            # Se limpia el tablero
+                            tablero = crear_tablero()
+                            ganador = False
+                        
+                        # En caso de un error
+                        else:
+                            print("\nEl servidor Conecta4 no se encuentra disponible\n")
+                            sock.close()
+                            exit()
                     
-                    # Se limpia el tablero
-                    tablero = crear_tablero()
-                    ganador = False
-                
                 # No quiere una nueva partida
                 else:
                     # Se envia el mensaje para terminar las ejecuciones
@@ -147,19 +164,19 @@ def solicitar_partida():
             # La partida sigue en curso
             elif int(jugada) > 0:
                 # Muestra que va a jugar el servidor
-                print("Es el turno del servidor")
+                print("\nEs el turno del servidor")
 
                 # Existe un empate
                 if int(jugada) > 100:
                     # Muestra la jugada del servidor
-                    print("El servidor colocó su ficha en la columna {}".format(int(jugada) - 100))
+                    print("El servidor colocó su ficha en la columna {}".format(-(int(jugada) - 100)))
                     
                     # Coloca la pieza del servidor
                     colocar_pieza(int(jugada) - 101, SERVIDOR, tablero)
                     mostrar_tablero(tablero)
 
                     # Se muestra el empate y pregunta por una nueva partida
-                    print("Empataste")
+                    print("Empataste ƪ(╯＿╰)ʃ")
                     repetir = input("¿Quieres jugar otra partida? S/N: ")
 
                     # Envía la solicitud de una partida nueva
@@ -198,7 +215,7 @@ def solicitar_partida():
 
                         # Si da el OK
                         if mensaje == "OK":
-                            print("Muchas gracias por jugar Conecta4")
+                            print("\nMuchas gracias por jugar Conecta4")
                             ganador = True
                             sock.close()
                         
@@ -211,6 +228,8 @@ def solicitar_partida():
                 # Si no hay ganador ni empate con la jugada
                 # Se agrega la jugada del servidor y sigue el juego
                 colocar_pieza(int(jugada) - 1, SERVIDOR, tablero)
+                # Muestra la jugada del servidor
+                print("El servidor colocó su ficha en la columna {}".format(-(int(jugada))))
 
             # Ganó el servidor
             else:
@@ -218,9 +237,9 @@ def solicitar_partida():
                 colocar_pieza(-int(jugada) - 1, SERVIDOR, tablero)
 
                 # Muestra que ganó el servidor
-                print("El servidor colocó su ficha en la columna {}".format(int(jugada)))
+                print("El servidor colocó su ficha en la columna {}".format(-(int(jugada))))
                 mostrar_tablero(tablero)
-                print("\nPerdiste\n")
+                print("\nGanó el servidor (；′⌒`)\n")
 
                 # Pregunta si quiere jugar de nuevo
                 repetir = input("¿Quieres jugar otra partida? S/N: ")
@@ -261,13 +280,13 @@ def solicitar_partida():
 
                     # Si da el OK
                     if mensaje == "OK":
-                        print("Muchas gracias por jugar Conecta4")
+                        print("\nMuchas gracias por jugar Conecta4")
                         ganador = True
                         sock.close()
 
                     # En caso de un error
                     else:
-                        print("Ocurrió un problema")
+                        print("\nOcurrió un problema")
                         sock.close()
                         exit(1)
         
@@ -276,7 +295,7 @@ def solicitar_partida():
     
     # No hay disponibilidad
     else:
-        print("Respuesta de disponibilidad: {}".format(disponibilidad))
+        print("Respuesta de disponibilidad: {}\n".format(disponibilidad))
         print("--------------------------------")
         sock.close()
 
@@ -285,7 +304,7 @@ def solicitar_partida():
 
 
 # Inicio del código a ejecutar
-print("Bienvenido al juego Conecta4\n")
+print("\nBienvenido al juego Conecta4\n")
 
 while True:
     print("Seleccione una opción\n 1. Jugar\n 2. Salir")

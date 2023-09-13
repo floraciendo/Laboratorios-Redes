@@ -89,6 +89,9 @@ func main() {
 
         // Cliente solicita una partida
         } else if respuesta == "PLAY" {
+            // Aleatoriedad de los números generados en caso de una nueva partida
+            rand.Seed(time.Now().UnixNano())
+
             // "Limpia" el tablero en caso de que se haya jugado antes
             tablero = matriz{{0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}}
 
