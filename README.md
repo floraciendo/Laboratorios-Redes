@@ -13,8 +13,6 @@ idk man
 
 ### comentarios flo (｡･∀･)ﾉﾞ
 - ya no debería tirar ningún error
-  - nvm el intermediario no reinicia la partida xd
-- faltaría creación de las conexiones UDP con cada jugada, si es que al final hay que crearlas
+  - el empate no funciona por parte de cliente
 - hay prints en el intermediario y servidor que no sé si deberíamos borrar
-- el servidor juega de manera aleatoria nomás
-- ignorando lo de las conexiones ya estaría listo el código, faltaría el informe
+- faltaría el informe
