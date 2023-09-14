@@ -166,10 +166,63 @@ def solicitar_partida():
                 # Muestra que va a jugar el servidor
                 print("\nEs el turno del servidor")
 
-                # Existe un empate
-                if int(jugada) > 100:
+                # Existe un empate con la jugada del cliente
+                if int(jugada) == 100:
+                    # Se muestra el empate y pregunta por una nueva partida
+                    print("Empataste ƪ(╯＿╰)ʃ")
+                    repetir = input("¿Quieres jugar otra partida? S/N: ")
+
+                    # Envía la solicitud de una partida nueva
+                    if repetir == "S":
+                        # Envia la solicitud de una partida nueva
+                        mensaje = "PLAY"
+                        sock.sendall(mensaje.encode())
+
+                        # Recibe la respuesta de disponibilidad
+                        disponibilidad = sock.recv(1024)
+                        disponibilidad = disponibilidad.decode()
+
+                        # Se puede jugar
+                        if disponibilidad == "OK":
+                            print("\nIniciando nueva partida\n")
+
+                            # Se limpia el tablero
+                            tablero = crear_tablero()
+                            ganador = False
+                        
+                        # En caso de un error
+                        else:
+                            print("\nEl servidor Conecta4 no se encuentra disponible\n")
+                            sock.close()
+                            exit()
+                    
+                    # No quiere una partida nueva
+                    else:
+                        # Se envía el mensaje para terminar las ejecuciones
+                        mensaje = "DONE"
+                        sock.sendall(mensaje.encode())
+
+                        # Recibe la respuesta
+                        mensaje = sock.recv(1024)
+                        mensaje = mensaje.decode()
+
+                        # Si da el OK
+                        if mensaje == "OK":
+                            print("\nMuchas gracias por jugar Conecta4")
+                            ganador = True
+                            sock.close()
+                            exit()
+                        
+                        # En caso de un error
+                        else:
+                            print("Ocurrió un problema")
+                            sock.close()
+                            exit(1)
+
+                # Existe un empate con la jugada del servidor
+                elif int(jugada) > 100:
                     # Muestra la jugada del servidor
-                    print("El servidor colocó su ficha en la columna {}".format(-(int(jugada) - 100)))
+                    print("El servidor colocó su ficha en la columna {}".format(int(jugada) - 100))
                     
                     # Coloca la pieza del servidor
                     colocar_pieza(int(jugada) - 101, SERVIDOR, tablero)
@@ -218,6 +271,7 @@ def solicitar_partida():
                             print("\nMuchas gracias por jugar Conecta4")
                             ganador = True
                             sock.close()
+                            exit()
                         
                         # En caso de un error
                         else:
@@ -229,7 +283,7 @@ def solicitar_partida():
                 # Se agrega la jugada del servidor y sigue el juego
                 colocar_pieza(int(jugada) - 1, SERVIDOR, tablero)
                 # Muestra la jugada del servidor
-                print("El servidor colocó su ficha en la columna {}".format(-(int(jugada))))
+                print("El servidor colocó su ficha en la columna {}".format(int(jugada)))
 
             # Ganó el servidor
             else:
@@ -283,6 +337,7 @@ def solicitar_partida():
                         print("\nMuchas gracias por jugar Conecta4")
                         ganador = True
                         sock.close()
+                        exit()
 
                     # En caso de un error
                     else:

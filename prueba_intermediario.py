@@ -67,8 +67,7 @@ def buscar_ganador(tablero, jugador):
 # Revisa si se produjo un empate
 def buscar_empate(tablero):
     for columna in range(6):
-        # Todavia se puede jugar
-        if fila_valida(columna, tablero) != -1:
+        if tablero[0][columna] == LIBRE:
             # No hay empate
             return False
     # Revisó todas las columnas y no hay espacios disponibles
@@ -170,7 +169,7 @@ def conexion():
                             # Si existe un empate con la jugada del cliente
                             if empate:
                                 # Mensaje de respuesta
-                                mensaje = str(int(mensaje) + 100)
+                                mensaje = str(100)
 
                             # No existe un empate
                             else:
