@@ -13,3 +13,4 @@ Instrucciones de compilación:
 Comentarios extra:
   - Se asume que solo se usarán inputs válidos.
   - No se crearon las conexiones UDP aleatorias extras del Servidor Conecta4.
+  - El Servidor Intermediario y Conecta4 muestran los mensajes que reciben y envían, asegurando que existen las conexiones.
